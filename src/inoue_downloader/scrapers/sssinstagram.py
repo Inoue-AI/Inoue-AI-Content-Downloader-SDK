@@ -104,7 +104,9 @@ async def _api_post(
     data: dict[str, str], proxy: str | None = None
 ) -> dict[str, Any] | list[Any]:
     """Send a signed POST to the sssinstagram convert API via noble-tls."""
-    session = noble_tls.Session(client=_TLS_CLIENT, proxy=proxy)
+    session = noble_tls.Session(client=_TLS_CLIENT)
+    if proxy:
+        session.proxies = {"http": proxy, "https": proxy}
     try:
         resp = await session.post(
             _API_URL, data=data, headers=_COMMON_HEADERS

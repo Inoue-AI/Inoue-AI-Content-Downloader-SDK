@@ -47,7 +47,10 @@ class SnapinstaScraper(AbstractScraper):
     async def _create_session(self) -> noble_tls.Session:
         """Create a noble-tls session with Chrome TLS fingerprint."""
         proxy = self._proxy_url()
-        return noble_tls.Session(client=_TLS_CLIENT, proxy=proxy)
+        session = noble_tls.Session(client=_TLS_CLIENT)
+        if proxy:
+            session.proxies = {"http": proxy, "https": proxy}
+        return session
 
     async def _fetch_page_config(
         self, session: noble_tls.Session
