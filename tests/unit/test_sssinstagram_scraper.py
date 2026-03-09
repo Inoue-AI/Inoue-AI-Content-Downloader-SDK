@@ -143,9 +143,7 @@ class TestParseResponse:
         assert len(media) == 3
 
     def test_multi_item_list(self) -> None:
-        meta, media = _parse_response(
-            MULTI_ITEM_RESPONSE, "https://instagram.com/testuser/"
-        )
+        meta, media = _parse_response(MULTI_ITEM_RESPONSE, "https://instagram.com/testuser/")
         assert meta.content_type == ContentType.CAROUSEL
         assert meta.author == "user1"
         assert len(media) == 2
@@ -346,9 +344,7 @@ class TestSssinstagramScraper:
                 return_value=mock_session,
             ),
         ):
-            _, files = await scraper.download(
-                "https://instagram.com/p/IMG001/", nested
-            )
+            _, files = await scraper.download("https://instagram.com/p/IMG001/", nested)
 
         assert nested.exists()
         assert len(files) == 1

@@ -51,9 +51,7 @@ class TestAutoModeSssinstagram:
             new_callable=AsyncMock,
             return_value=(mock_metadata, [video_file]),
         ):
-            metadata, files = await downloader.download(
-                "https://instagram.com/p/ABC123/", tmp_path
-            )
+            metadata, files = await downloader.download("https://instagram.com/p/ABC123/", tmp_path)
 
         assert metadata.platform == Platform.INSTAGRAM
         assert len(files) == 1
@@ -88,9 +86,7 @@ class TestAutoModeSnapinstaFallback:
                 return_value=(mock_metadata, [video_file]),
             ),
         ):
-            metadata, files = await downloader.download(
-                "https://instagram.com/p/ABC123/", tmp_path
-            )
+            metadata, files = await downloader.download("https://instagram.com/p/ABC123/", tmp_path)
 
         assert metadata.platform == Platform.INSTAGRAM
         assert len(files) == 1
@@ -167,9 +163,7 @@ class TestAutoModeInstagrapi:
             mock_client.video_download = MagicMock(return_value=str(video_path))
             mock_ensure.return_value = mock_client
 
-            metadata, files = await downloader.download(
-                "https://instagram.com/p/ABC123/", tmp_path
-            )
+            metadata, files = await downloader.download("https://instagram.com/p/ABC123/", tmp_path)
 
         assert metadata.platform == Platform.INSTAGRAM
         assert metadata.content_type == ContentType.VIDEO
@@ -188,9 +182,7 @@ class TestExplicitSssinstagramProvider:
     async def test_download_success(
         self, config_no_creds: DownloaderConfig, tmp_path: Path
     ) -> None:
-        downloader = InstagramDownloader(
-            config_no_creds, provider=DownloadProvider.SSSINSTAGRAM
-        )
+        downloader = InstagramDownloader(config_no_creds, provider=DownloadProvider.SSSINSTAGRAM)
 
         video_file = tmp_path / "ABC123.mp4"
         video_file.write_bytes(b"video data")
@@ -216,9 +208,7 @@ class TestExplicitSssinstagramProvider:
         self, config_no_creds: DownloaderConfig, tmp_path: Path
     ) -> None:
         """When sssinstagram fails with explicit provider, error propagates — no fallback."""
-        downloader = InstagramDownloader(
-            config_no_creds, provider=DownloadProvider.SSSINSTAGRAM
-        )
+        downloader = InstagramDownloader(config_no_creds, provider=DownloadProvider.SSSINSTAGRAM)
 
         with (
             patch.object(
@@ -239,9 +229,7 @@ class TestExplicitSnapinstaProvider:
     async def test_download_success(
         self, config_no_creds: DownloaderConfig, tmp_path: Path
     ) -> None:
-        downloader = InstagramDownloader(
-            config_no_creds, provider=DownloadProvider.SNAPINSTA
-        )
+        downloader = InstagramDownloader(config_no_creds, provider=DownloadProvider.SNAPINSTA)
 
         video_file = tmp_path / "ABC123.mp4"
         video_file.write_bytes(b"video data")
@@ -265,9 +253,7 @@ class TestExplicitSnapinstaProvider:
     async def test_download_failure_no_fallback(
         self, config_no_creds: DownloaderConfig, tmp_path: Path
     ) -> None:
-        downloader = InstagramDownloader(
-            config_no_creds, provider=DownloadProvider.SNAPINSTA
-        )
+        downloader = InstagramDownloader(config_no_creds, provider=DownloadProvider.SNAPINSTA)
 
         with (
             patch.object(
@@ -288,9 +274,7 @@ class TestExplicitInstagrapiProvider:
     async def test_download_with_creds(
         self, config_with_creds: DownloaderConfig, tmp_path: Path
     ) -> None:
-        downloader = InstagramDownloader(
-            config_with_creds, provider=DownloadProvider.INSTAGRAPI
-        )
+        downloader = InstagramDownloader(config_with_creds, provider=DownloadProvider.INSTAGRAPI)
 
         mock_media = MagicMock()
         mock_media.media_type = 2
@@ -317,9 +301,7 @@ class TestExplicitInstagrapiProvider:
             mock_client.video_download = MagicMock(return_value=str(video_path))
             mock_ensure.return_value = mock_client
 
-            metadata, files = await downloader.download(
-                "https://instagram.com/p/ABC123/", tmp_path
-            )
+            metadata, files = await downloader.download("https://instagram.com/p/ABC123/", tmp_path)
 
         assert metadata.content_type == ContentType.VIDEO
         assert len(files) == 1
@@ -343,9 +325,7 @@ class TestMediaToMetadata:
         mock_media.thumbnail_url = "https://example.com/thumb.jpg"
         mock_media.user = MagicMock(username="creator", pk=42)
 
-        meta = InstagramDownloader._media_to_metadata(
-            mock_media, "https://instagram.com/reel/XYZ/"
-        )
+        meta = InstagramDownloader._media_to_metadata(mock_media, "https://instagram.com/reel/XYZ/")
         assert meta.platform == Platform.INSTAGRAM
         assert meta.content_type == ContentType.VIDEO
         assert meta.author == "creator"
@@ -362,9 +342,7 @@ class TestMediaToMetadata:
         mock_media.thumbnail_url = None
         mock_media.user = None
 
-        meta = InstagramDownloader._media_to_metadata(
-            mock_media, "https://instagram.com/p/ABC/"
-        )
+        meta = InstagramDownloader._media_to_metadata(mock_media, "https://instagram.com/p/ABC/")
         assert meta.content_type == ContentType.CAROUSEL
         assert meta.author is None
         assert meta.title is None
@@ -381,7 +359,5 @@ class TestMediaToMetadata:
         mock_media.thumbnail_url = None
         mock_media.user = MagicMock(username="photographer", pk=7)
 
-        meta = InstagramDownloader._media_to_metadata(
-            mock_media, "https://instagram.com/p/IMG/"
-        )
+        meta = InstagramDownloader._media_to_metadata(mock_media, "https://instagram.com/p/IMG/")
         assert meta.content_type == ContentType.IMAGE

@@ -64,7 +64,7 @@ class YtDlpDownloader(AbstractDownloader):
                 info = ydl.extract_info(url, download=False)
                 if info is None:
                     raise YtDlpError(f"yt-dlp returned no info for: {url}")
-                return info
+                return dict(info)
 
         try:
             info = await asyncio.to_thread(_extract)
@@ -83,7 +83,7 @@ class YtDlpDownloader(AbstractDownloader):
                 info = ydl.extract_info(url, download=True)
                 if info is None:
                     raise YtDlpError(f"yt-dlp returned no info for: {url}")
-                return info
+                return dict(info)
 
         try:
             info = await asyncio.to_thread(_download)
@@ -126,12 +126,8 @@ class YtDlpDownloader(AbstractDownloader):
             author=_str_or_none(info.get("uploader") or info.get("channel")),
             author_id=_str_or_none(info.get("uploader_id") or info.get("channel_id")),
             duration_seconds=float(duration) if isinstance(duration, int | float) else None,
-            view_count=(
-                int(info["view_count"]) if isinstance(info.get("view_count"), int | float) else None
-            ),
-            like_count=(
-                int(info["like_count"]) if isinstance(info.get("like_count"), int | float) else None
-            ),
+            view_count=int(vc) if isinstance((vc := info.get("view_count")), int | float) else None,
+            like_count=int(lc) if isinstance((lc := info.get("like_count")), int | float) else None,
             upload_date=upload_date,
             thumbnail_url=(
                 info.get("thumbnail") if isinstance(info.get("thumbnail"), str) else None

@@ -83,7 +83,7 @@ class DownloaderConfig(BaseModel):
         if self.provider == DownloadProvider.INSTAGRAPI and self.instagram is None:
             raise ValueError(
                 "InstagramCredentials must be provided when using the INSTAGRAPI provider. "
-                "Set 'instagram=InstagramCredentials(username=\"...\", password=\"...\")' "
+                'Set \'instagram=InstagramCredentials(username="...", password="...")\' '
                 "in your config."
             )
         return self
