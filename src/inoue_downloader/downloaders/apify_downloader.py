@@ -20,6 +20,12 @@ logger = logging.getLogger(__name__)
 _APIFY_BASE = "https://api.apify.com/v2"
 
 
+def _last_path_segment(url: str) -> str:
+    """Extract the last non-empty path segment from a URL."""
+    segments = [s for s in url.rstrip("/").split("/") if s]
+    return segments[-1] if segments else "unknown"
+
+
 class ApifyDownloader(AbstractDownloader):
     """Downloader that uses Apify actors for YouTube, TikTok, and Instagram."""
 
@@ -175,7 +181,7 @@ class ApifyDownloader(AbstractDownloader):
         source_id = _str(item.get("id", ""))
         if not source_id:
             match = re.search(r"[?&]v=([A-Za-z0-9_-]{11})", url)
-            source_id = match.group(1) if match else url
+            source_id = match.group(1) if match else _last_path_segment(url)
 
         upload_date: datetime | None = None
         date_raw = item.get("date")
@@ -216,7 +222,7 @@ class ApifyDownloader(AbstractDownloader):
         source_id = _str(item.get("id", ""))
         if not source_id:
             match = re.search(r"/video/(\d+)", url)
-            source_id = match.group(1) if match else url
+            source_id = match.group(1) if match else _last_path_segment(url)
 
         create_time = item.get("createTime") or item.get("createTimeISO")
         upload_date: datetime | None = None
@@ -251,17 +257,11 @@ class ApifyDownloader(AbstractDownloader):
             like_count=_int(item.get("diggCount") or item.get("likesCount")),
             upload_date=upload_date,
             thumbnail_url=_str(
-                item.get("covers", {}).get("default")  # type: ignore[union-attr]
-                if isinstance(item.get("covers"), dict)
-                else None
+                covers.get("default") if isinstance((covers := item.get("covers")), dict) else None
             ),
             original_url=url,
             source_id=source_id,
-            tags=[
-                _str(h.get("name"))  # type: ignore[union-attr]
-                for h in (item.get("hashtags") or [])
-                if isinstance(h, dict) and h.get("name")
-            ],
+            tags=_extract_hashtag_names(item.get("hashtags")),
             extra={"provider": "apify", "actor": self._apify.tiktok_actor},
         )
 
@@ -269,7 +269,7 @@ class ApifyDownloader(AbstractDownloader):
         source_id = _str(item.get("id") or item.get("shortCode", ""))
         if not source_id:
             match = re.search(r"/(?:p|reel|tv)/([A-Za-z0-9_-]+)", url)
-            source_id = match.group(1) if match else url
+            source_id = match.group(1) if match else _last_path_segment(url)
 
         # Determine content type
         ig_type = _str(item.get("type", ""))
@@ -293,7 +293,7 @@ class ApifyDownloader(AbstractDownloader):
         return ContentMetadata(
             platform=Platform.INSTAGRAM,
             content_type=content_type,
-            title=_str(item.get("caption", ""))[:100] if item.get("caption") else None,
+            title=(_str(item.get("caption")) or "")[:100] or None,
             description=_str(item.get("caption")),
             author=_str(item.get("ownerUsername")),
             author_id=_str(item.get("ownerId")),
@@ -303,7 +303,7 @@ class ApifyDownloader(AbstractDownloader):
             thumbnail_url=_str(item.get("displayUrl")),
             original_url=url,
             source_id=source_id,
-            tags=[_str(h) for h in (item.get("hashtags") or []) if isinstance(h, str)],
+            tags=_extract_hashtag_strings(item.get("hashtags")),
             extra={"provider": "apify", "actor": self._apify.instagram_actor},
         )
 
@@ -423,6 +423,20 @@ def _int(val: object) -> int | None:
         except ValueError:
             return None
     return None
+
+
+def _extract_hashtag_names(raw: object) -> list[str]:
+    """Extract hashtag name strings from a list of dicts (TikTok format)."""
+    if not isinstance(raw, list):
+        return []
+    return [_str(h.get("name")) or "" for h in raw if isinstance(h, dict) and h.get("name")]
+
+
+def _extract_hashtag_strings(raw: object) -> list[str]:
+    """Extract plain string hashtags from a list (Instagram format)."""
+    if not isinstance(raw, list):
+        return []
+    return [_str(h) or "" for h in raw if isinstance(h, str)]
 
 
 def _parse_duration_string(s: str) -> float | None:

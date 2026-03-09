@@ -48,7 +48,7 @@ class TestSsstikScraper:
             FAKE_DOWNLOAD_HTML,
             "https://vm.tiktok.com/abcdef/",
         )
-        assert meta.source_id == "https://vm.tiktok.com/abcdef/"
+        assert meta.source_id == "abcdef"
 
     @pytest.mark.asyncio
     async def test_download_success(self, tmp_path: Path) -> None:

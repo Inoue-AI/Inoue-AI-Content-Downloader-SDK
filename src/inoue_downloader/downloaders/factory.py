@@ -6,14 +6,18 @@ from ..exceptions import ConfigurationError, UnsupportedPlatformError
 from .base import AbstractDownloader
 
 # Providers that only work with a specific platform.
-_INSTAGRAM_ONLY_PROVIDERS = frozenset({
-    DownloadProvider.SSSINSTAGRAM,
-    DownloadProvider.SNAPINSTA,
-    DownloadProvider.INSTAGRAPI,
-})
-_TIKTOK_ONLY_PROVIDERS = frozenset({
-    DownloadProvider.SSSTIK,
-})
+_INSTAGRAM_ONLY_PROVIDERS = frozenset(
+    {
+        DownloadProvider.SSSINSTAGRAM,
+        DownloadProvider.SNAPINSTA,
+        DownloadProvider.INSTAGRAPI,
+    }
+)
+_TIKTOK_ONLY_PROVIDERS = frozenset(
+    {
+        DownloadProvider.SSSTIK,
+    }
+)
 
 
 class DownloaderFactory:
@@ -70,6 +74,4 @@ class DownloaderFactory:
             case Platform.INSTAGRAM:
                 return InstagramDownloader(config)
             case _:
-                raise UnsupportedPlatformError(
-                    f"No downloader registered for platform: {platform}"
-                )
+                raise UnsupportedPlatformError(f"No downloader registered for platform: {platform}")

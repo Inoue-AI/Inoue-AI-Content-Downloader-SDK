@@ -107,7 +107,12 @@ class SsstikScraper(AbstractScraper):
 
         # Extract source ID from the TikTok URL
         source_id_match = re.search(r"/video/(\d+)", url)
-        source_id = source_id_match.group(1) if source_id_match else url
+        if source_id_match:
+            source_id = source_id_match.group(1)
+        else:
+            # Short URLs (vm.tiktok.com/ZNRufq2ex/) - use the last path segment
+            path_segments = [s for s in url.rstrip("/").split("/") if s]
+            source_id = path_segments[-1] if path_segments else "unknown"
 
         return ContentMetadata(
             platform=Platform.TIKTOK,

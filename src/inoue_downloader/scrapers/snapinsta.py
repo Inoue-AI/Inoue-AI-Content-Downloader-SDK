@@ -52,9 +52,7 @@ class SnapinstaScraper(AbstractScraper):
             session.proxies = {"http": proxy, "https": proxy}
         return session
 
-    async def _fetch_page_config(
-        self, session: noble_tls.Session
-    ) -> dict[str, str]:
+    async def _fetch_page_config(self, session: noble_tls.Session) -> dict[str, str]:
         """GET snapinsta.to and extract page configuration variables."""
         resp = await session.get(f"{_BASE_URL}/")
         if resp.status_code != 200:
@@ -63,9 +61,7 @@ class SnapinstaScraper(AbstractScraper):
         text = resp.text
 
         if "Just a moment" in text:
-            raise ScraperError(
-                "snapinsta.to Cloudflare challenge could not be bypassed"
-            )
+            raise ScraperError("snapinsta.to Cloudflare challenge could not be bypassed")
 
         config: dict[str, str] = {}
 
@@ -74,9 +70,7 @@ class SnapinstaScraper(AbstractScraper):
             config[f"k_{match.group(1)}"] = match.group(2)
 
         if "k_url_search" not in config:
-            raise ScraperError(
-                "Could not extract snapinsta.to API configuration from page"
-            )
+            raise ScraperError("Could not extract snapinsta.to API configuration from page")
 
         return config
 
@@ -105,9 +99,7 @@ class SnapinstaScraper(AbstractScraper):
 
         resp = await session.post(search_url, data=data, headers=headers)
         if resp.status_code != 200:
-            raise ScraperError(
-                f"snapinsta.to search endpoint returned status {resp.status_code}"
-            )
+            raise ScraperError(f"snapinsta.to search endpoint returned status {resp.status_code}")
 
         try:
             result: dict[str, object] = resp.json()
@@ -156,15 +148,11 @@ class SnapinstaScraper(AbstractScraper):
     @staticmethod
     def _decode_response(raw_js: str) -> str:
         """Extract and deobfuscate the HTML from a JS response (legacy)."""
-        match = re.search(
-            r'\("([^"]+)",\d+,"([^"]+)",(\d+),(\d+),\d+\)', raw_js
-        )
+        match = re.search(r'\("([^"]+)",\d+,"([^"]+)",(\d+),(\d+),\d+\)', raw_js)
         if not match:
             if "<" in raw_js and ("href=" in raw_js or "src=" in raw_js):
                 return raw_js
-            raise ScraperError(
-                "Could not extract obfuscated parameters from snapinsta.to"
-            )
+            raise ScraperError("Could not extract obfuscated parameters from snapinsta.to")
 
         h = match.group(1)
         t = match.group(2)
@@ -175,13 +163,9 @@ class SnapinstaScraper(AbstractScraper):
 
     async def _fetch_token(self, session: aiohttp.ClientSession) -> str:
         """Legacy: GET snapinsta.to and extract the CSRF token."""
-        async with session.get(
-            f"{_BASE_URL}/", proxy=self._proxy_url()
-        ) as resp:
+        async with session.get(f"{_BASE_URL}/", proxy=self._proxy_url()) as resp:
             if resp.status != 200:
-                raise ScraperError(
-                    f"snapinsta.to returned status {resp.status}"
-                )
+                raise ScraperError(f"snapinsta.to returned status {resp.status}")
             text = await resp.text()
 
         match = re.search(r'name="token"\s+value="(.*?)"', text)
@@ -189,9 +173,7 @@ class SnapinstaScraper(AbstractScraper):
             raise ScraperError("Could not extract snapinsta.to CSRF token")
         return match.group(1)
 
-    async def _request_download(
-        self, session: aiohttp.ClientSession, url: str, token: str
-    ) -> str:
+    async def _request_download(self, session: aiohttp.ClientSession, url: str, token: str) -> str:
         """Legacy: POST to snapinsta.to to get the obfuscated response."""
         data = {"url": url, "token": token}
         headers = {
@@ -206,18 +188,12 @@ class SnapinstaScraper(AbstractScraper):
             proxy=self._proxy_url(),
         ) as resp:
             if resp.status != 200:
-                raise ScraperError(
-                    f"snapinsta.to action endpoint returned status {resp.status}"
-                )
+                raise ScraperError(f"snapinsta.to action endpoint returned status {resp.status}")
             return await resp.text()
 
-    async def download(
-        self, url: str, output_dir: Path
-    ) -> tuple[ContentMetadata, list[Path]]:
+    async def download(self, url: str, output_dir: Path) -> tuple[ContentMetadata, list[Path]]:
         """Download Instagram content via snapinsta.to."""
-        logger.info(
-            "Attempting Instagram download via snapinsta.to for: %s", url
-        )
+        logger.info("Attempting Instagram download via snapinsta.to for: %s", url)
 
         # Use noble-tls (async, HTTP/2, Chrome TLS fingerprint)
         session = await self._create_session()
@@ -234,15 +210,15 @@ class SnapinstaScraper(AbstractScraper):
         media_urls = self._extract_download_urls_from_result(result)
 
         if not media_urls:
-            raise ScraperError(
-                "No download URLs found in snapinsta.to response"
-            )
+            raise ScraperError("No download URLs found in snapinsta.to response")
 
         # Extract source ID from Instagram URL
-        source_id_match = re.search(
-            r"/(?:p|reel|tv)/([A-Za-z0-9_-]+)", url
-        )
-        source_id = source_id_match.group(1) if source_id_match else url
+        source_id_match = re.search(r"/(?:p|reel|tv)/([A-Za-z0-9_-]+)", url)
+        if source_id_match:
+            source_id = source_id_match.group(1)
+        else:
+            path_segments = [s for s in url.rstrip("/").split("/") if s]
+            source_id = path_segments[-1] if path_segments else "unknown"
 
         # Determine content type
         has_video = any(t == "video" for _, t in media_urls)
@@ -255,9 +231,7 @@ class SnapinstaScraper(AbstractScraper):
 
         # Download media files using aiohttp for async streaming
         downloaded_paths: list[Path] = []
-        async with aiohttp.ClientSession(
-            headers={"User-Agent": _USER_AGENT}
-        ) as dl_session:
+        async with aiohttp.ClientSession(headers={"User-Agent": _USER_AGENT}) as dl_session:
             for i, (media_url, media_type) in enumerate(media_urls):
                 try:
                     async with dl_session.get(media_url) as resp:
@@ -282,15 +256,11 @@ class SnapinstaScraper(AbstractScraper):
                         output_path.write_bytes(content)
                         downloaded_paths.append(output_path)
                 except aiohttp.ClientError as e:
-                    logger.warning(
-                        "Network error downloading media %d: %s", i, e
-                    )
+                    logger.warning("Network error downloading media %d: %s", i, e)
                     continue
 
         if not downloaded_paths:
-            raise ScraperError(
-                "Failed to download any files from snapinsta.to"
-            )
+            raise ScraperError("Failed to download any files from snapinsta.to")
 
         metadata = ContentMetadata(
             platform=Platform.INSTAGRAM,
@@ -338,17 +308,13 @@ def _extract_media_urls_from_html(html: str) -> list[tuple[str, str]]:
     # Look for video download links
     for link in soup.find_all("a", href=True):
         href = str(link["href"])
-        if href.startswith("http") and (
-            "cdninstagram" in href or "scontent" in href
-        ):
+        if href.startswith("http") and ("cdninstagram" in href or "scontent" in href):
             urls.append((href, "video"))
 
     # Look for image sources
     for img in soup.find_all("img", src=True):
         src = str(img["src"])
-        if src.startswith("http") and (
-            "cdninstagram" in src or "scontent" in src
-        ):
+        if src.startswith("http") and ("cdninstagram" in src or "scontent" in src):
             urls.append((src, "image"))
 
     # Fallback: any http links that look like media downloads
