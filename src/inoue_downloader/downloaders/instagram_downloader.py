@@ -4,6 +4,7 @@ import asyncio
 import logging
 import re
 from pathlib import Path
+from typing import Any
 
 from ..config import DownloaderConfig
 from ..enums import ContentType, DownloadProvider, Platform
@@ -36,7 +37,7 @@ class InstagramDownloader(AbstractDownloader):
         self._provider = provider
         self._sssinstagram = SssinstagramScraper(proxy=config.proxy)
         self._snapinsta = SnapinstaScraper(proxy=config.proxy)
-        self._insta_client: object | None = None
+        self._insta_client: Any = None
 
     # ------------------------------------------------------------------
     # extract_metadata
@@ -67,9 +68,7 @@ class InstagramDownloader(AbstractDownloader):
     # download
     # ------------------------------------------------------------------
 
-    async def download(
-        self, url: str, output_dir: Path
-    ) -> tuple[ContentMetadata, list[Path]]:
+    async def download(self, url: str, output_dir: Path) -> tuple[ContentMetadata, list[Path]]:
         if self._provider == DownloadProvider.SSSINSTAGRAM:
             return await self._sssinstagram.download(url, output_dir)
         if self._provider == DownloadProvider.SNAPINSTA:
@@ -113,7 +112,11 @@ class InstagramDownloader(AbstractDownloader):
             media_urls = self._snapinsta._extract_download_urls(decoded)
 
             source_id_match = re.search(r"/(?:p|reel|tv)/([A-Za-z0-9_-]+)", url)
-            source_id = source_id_match.group(1) if source_id_match else url
+            if source_id_match:
+                source_id = source_id_match.group(1)
+            else:
+                path_segments = [s for s in url.rstrip("/").split("/") if s]
+                source_id = path_segments[-1] if path_segments else "unknown"
 
             has_video = any(t == "video" for _, t in media_urls)
             content_type = ContentType.VIDEO if has_video else ContentType.IMAGE
@@ -129,7 +132,7 @@ class InstagramDownloader(AbstractDownloader):
     # instagrapi
     # ------------------------------------------------------------------
 
-    async def _ensure_instagrapi_client(self) -> object:
+    async def _ensure_instagrapi_client(self) -> Any:
         if self._insta_client is not None:
             return self._insta_client
 
@@ -167,9 +170,7 @@ class InstagramDownloader(AbstractDownloader):
                     logger.debug("Session restore failed, will login fresh")
 
         try:
-            await asyncio.to_thread(
-                client.login, creds.username, creds.password.get_secret_value()
-            )
+            await asyncio.to_thread(client.login, creds.username, creds.password.get_secret_value())
         except Exception as e:
             raise InstagramError(f"Instagram login failed: {e}") from e
 
@@ -186,8 +187,8 @@ class InstagramDownloader(AbstractDownloader):
         client = await self._ensure_instagrapi_client()
 
         try:
-            media_pk = await asyncio.to_thread(client.media_pk_from_url, url)  # type: ignore[union-attr]
-            media_info = await asyncio.to_thread(client.media_info, media_pk)  # type: ignore[union-attr]
+            media_pk = await asyncio.to_thread(client.media_pk_from_url, url)
+            media_info = await asyncio.to_thread(client.media_info, media_pk)
         except Exception as e:
             raise InstagramError(f"Failed to extract Instagram metadata: {e}") from e
 
@@ -199,8 +200,8 @@ class InstagramDownloader(AbstractDownloader):
         client = await self._ensure_instagrapi_client()
 
         try:
-            media_pk = await asyncio.to_thread(client.media_pk_from_url, url)  # type: ignore[union-attr]
-            media_info = await asyncio.to_thread(client.media_info, media_pk)  # type: ignore[union-attr]
+            media_pk = await asyncio.to_thread(client.media_pk_from_url, url)
+            media_info = await asyncio.to_thread(client.media_info, media_pk)
         except Exception as e:
             raise InstagramError(f"Failed to get Instagram media info: {e}") from e
 
@@ -213,21 +214,21 @@ class InstagramDownloader(AbstractDownloader):
                 path = await asyncio.to_thread(
                     client.photo_download,
                     media_pk,
-                    folder=output_dir,  # type: ignore[union-attr]
+                    folder=output_dir,
                 )
                 downloaded_paths.append(Path(path))
             elif media_type == 2:
                 path = await asyncio.to_thread(
                     client.video_download,
                     media_pk,
-                    folder=output_dir,  # type: ignore[union-attr]
+                    folder=output_dir,
                 )
                 downloaded_paths.append(Path(path))
             elif media_type == 8:
                 paths = await asyncio.to_thread(
                     client.album_download,
                     media_pk,
-                    folder=output_dir,  # type: ignore[union-attr]
+                    folder=output_dir,
                 )
                 downloaded_paths.extend(Path(p) for p in paths)
             else:
@@ -243,7 +244,7 @@ class InstagramDownloader(AbstractDownloader):
         return metadata, downloaded_paths
 
     @staticmethod
-    def _media_to_metadata(media_info: object, url: str) -> ContentMetadata:
+    def _media_to_metadata(media_info: Any, url: str) -> ContentMetadata:
         type_map = {1: ContentType.IMAGE, 2: ContentType.VIDEO, 8: ContentType.CAROUSEL}
         media_type = getattr(media_info, "media_type", 2)
         content_type = type_map.get(media_type, ContentType.VIDEO)

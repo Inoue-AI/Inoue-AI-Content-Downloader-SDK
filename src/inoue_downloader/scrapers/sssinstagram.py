@@ -46,9 +46,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Signing constants extracted from sssinstagram.com (link.chunk.js module 7027)
 # ---------------------------------------------------------------------------
-_HMAC_KEY = bytes.fromhex(
-    "df73cf7be343f9701ce0f2ae809f9bd752e82fbb7017f463141664465b8ce8e0"
-)
+_HMAC_KEY = bytes.fromhex("df73cf7be343f9701ce0f2ae809f9bd752e82fbb7017f463141664465b8ce8e0")
 _EMBEDDED_TS = 1770970183770
 _SIGNING_VERSION = 2
 
@@ -100,17 +98,13 @@ def _sign_request(url: str) -> dict[str, str]:
 # ---------------------------------------------------------------------------
 
 
-async def _api_post(
-    data: dict[str, str], proxy: str | None = None
-) -> dict[str, Any] | list[Any]:
+async def _api_post(data: dict[str, str], proxy: str | None = None) -> dict[str, Any] | list[Any]:
     """Send a signed POST to the sssinstagram convert API via noble-tls."""
     session = noble_tls.Session(client=_TLS_CLIENT)
     if proxy:
         session.proxies = {"http": proxy, "https": proxy}
     try:
-        resp = await session.post(
-            _API_URL, data=data, headers=_COMMON_HEADERS
-        )
+        resp = await session.post(_API_URL, data=data, headers=_COMMON_HEADERS)
 
         if resp.status_code == 422:
             body = resp.text
@@ -119,14 +113,10 @@ async def _api_post(
                     "sssinstagram.com: Captcha required. "
                     "This usually means the HMAC key has changed."
                 )
-            raise ScraperError(
-                f"sssinstagram.com returned HTTP 422: {body[:200]}"
-            )
+            raise ScraperError(f"sssinstagram.com returned HTTP 422: {body[:200]}")
 
         if resp.status_code != 200:
-            raise ScraperError(
-                f"sssinstagram.com returned HTTP {resp.status_code}"
-            )
+            raise ScraperError(f"sssinstagram.com returned HTTP {resp.status_code}")
 
         return resp.json()  # type: ignore[no-any-return]
     finally:
@@ -154,9 +144,7 @@ def _parse_response(
         items = raw
     elif isinstance(raw, dict):
         if raw.get("success") is False:
-            msg = raw.get(
-                "message", raw.get("response_type", "unknown error")
-            )
+            msg = raw.get("message", raw.get("response_type", "unknown error"))
             raise ScraperError(f"sssinstagram.com API error: {msg}")
         items = [raw]
     else:
@@ -178,32 +166,30 @@ def _parse_response(
         if isinstance(urls, list):
             for u in urls:
                 if isinstance(u, dict) and u.get("url"):
-                    media.append((
-                        u["url"],
-                        u.get("type", "video"),
-                        u.get(
-                            "ext",
-                            _guess_ext(u["url"], u.get("type", "video")),
-                        ),
-                    ))
+                    media.append(
+                        (
+                            u["url"],
+                            u.get("type", "video"),
+                            u.get(
+                                "ext",
+                                _guess_ext(u["url"], u.get("type", "video")),
+                            ),
+                        )
+                    )
 
     if not media:
-        raise ScraperError(
-            "No downloadable media found in sssinstagram.com response"
-        )
+        raise ScraperError("No downloadable media found in sssinstagram.com response")
 
     # Build metadata
-    source_id_match = re.search(
-        r"/(?:p|reel|tv|stories)/([A-Za-z0-9_-]+)", original_url
-    )
+    source_id_match = re.search(r"/(?:p|reel|tv|stories)/([A-Za-z0-9_-]+)", original_url)
     if not source_id_match:
         # For profile URLs
-        username_match = re.search(
-            r"instagram\.com/([A-Za-z0-9_.]+)", original_url
-        )
-        source_id = (
-            username_match.group(1) if username_match else original_url
-        )
+        username_match = re.search(r"instagram\.com/([A-Za-z0-9_.]+)", original_url)
+        if username_match:
+            source_id = username_match.group(1)
+        else:
+            path_segments = [s for s in original_url.rstrip("/").split("/") if s]
+            source_id = path_segments[-1] if path_segments else "unknown"
     else:
         source_id = source_id_match.group(1)
 
@@ -284,9 +270,7 @@ class SssinstagramScraper(AbstractScraper):
         output_dir: Path,
     ) -> tuple[ContentMetadata, list[Path]]:
         """Download Instagram content via sssinstagram.com."""
-        logger.info(
-            "Attempting Instagram download via sssinstagram.com for: %s", url
-        )
+        logger.info("Attempting Instagram download via sssinstagram.com for: %s", url)
 
         # Step 1: Sign and send the request
         signed = _sign_request(url)
@@ -295,9 +279,7 @@ class SssinstagramScraper(AbstractScraper):
         except ScraperError:
             raise
         except Exception as e:
-            raise ScraperError(
-                f"sssinstagram.com request failed: {e}"
-            ) from e
+            raise ScraperError(f"sssinstagram.com request failed: {e}") from e
 
         # Step 2: Parse response
         metadata, media_list = _parse_response(raw, url)
@@ -335,9 +317,7 @@ class SssinstagramScraper(AbstractScraper):
                         downloaded.append(output_path)
 
                 except aiohttp.ClientError as e:
-                    logger.warning(
-                        "Network error downloading media %d: %s", i, e
-                    )
+                    logger.warning("Network error downloading media %d: %s", i, e)
                     continue
 
         if not downloaded:

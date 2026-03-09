@@ -140,9 +140,7 @@ class TestSnapinstaScraper:
                 new_callable=AsyncMock,
                 return_value=FAKE_PAGE_CONFIG,
             ),
-            patch.object(
-                scraper, "_search", new_callable=AsyncMock, return_value=search_result
-            ),
+            patch.object(scraper, "_search", new_callable=AsyncMock, return_value=search_result),
             patch(
                 "inoue_downloader.scrapers.snapinsta.aiohttp.ClientSession",
                 return_value=mock_dl_session,
@@ -197,9 +195,7 @@ class TestSnapinstaScraper:
                 new_callable=AsyncMock,
                 return_value=FAKE_PAGE_CONFIG,
             ),
-            patch.object(
-                scraper, "_search", new_callable=AsyncMock, return_value=search_result
-            ),
+            patch.object(scraper, "_search", new_callable=AsyncMock, return_value=search_result),
             patch(
                 "inoue_downloader.scrapers.snapinsta.aiohttp.ClientSession",
                 return_value=mock_dl_session,
@@ -251,9 +247,7 @@ class TestSnapinstaScraper:
                 new_callable=AsyncMock,
                 return_value=FAKE_PAGE_CONFIG,
             ),
-            patch.object(
-                scraper, "_search", new_callable=AsyncMock, return_value=search_result
-            ),
+            patch.object(scraper, "_search", new_callable=AsyncMock, return_value=search_result),
             pytest.raises(ScraperError, match="No download URLs"),
         ):
             await scraper.download("https://www.instagram.com/p/ABC/", tmp_path)
@@ -327,9 +321,7 @@ class TestSnapinstaScraper:
         mock_session.post = AsyncMock(return_value=mock_resp)
 
         with pytest.raises(ScraperError, match="Turnstile"):
-            await scraper._search(
-                mock_session, FAKE_PAGE_CONFIG, "https://instagram.com/p/ABC/"
-            )
+            await scraper._search(mock_session, FAKE_PAGE_CONFIG, "https://instagram.com/p/ABC/")
 
 
 class TestSnapinstaWithProxy:
