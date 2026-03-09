@@ -20,6 +20,12 @@ logger = logging.getLogger(__name__)
 _APIFY_BASE = "https://api.apify.com/v2"
 
 
+def _last_path_segment(url: str) -> str:
+    """Extract the last non-empty path segment from a URL."""
+    segments = [s for s in url.rstrip("/").split("/") if s]
+    return segments[-1] if segments else "unknown"
+
+
 class ApifyDownloader(AbstractDownloader):
     """Downloader that uses Apify actors for YouTube, TikTok, and Instagram."""
 
@@ -175,7 +181,7 @@ class ApifyDownloader(AbstractDownloader):
         source_id = _str(item.get("id", ""))
         if not source_id:
             match = re.search(r"[?&]v=([A-Za-z0-9_-]{11})", url)
-            source_id = match.group(1) if match else url
+            source_id = match.group(1) if match else _last_path_segment(url)
 
         upload_date: datetime | None = None
         date_raw = item.get("date")
@@ -216,7 +222,7 @@ class ApifyDownloader(AbstractDownloader):
         source_id = _str(item.get("id", ""))
         if not source_id:
             match = re.search(r"/video/(\d+)", url)
-            source_id = match.group(1) if match else url
+            source_id = match.group(1) if match else _last_path_segment(url)
 
         create_time = item.get("createTime") or item.get("createTimeISO")
         upload_date: datetime | None = None
@@ -269,7 +275,7 @@ class ApifyDownloader(AbstractDownloader):
         source_id = _str(item.get("id") or item.get("shortCode", ""))
         if not source_id:
             match = re.search(r"/(?:p|reel|tv)/([A-Za-z0-9_-]+)", url)
-            source_id = match.group(1) if match else url
+            source_id = match.group(1) if match else _last_path_segment(url)
 
         # Determine content type
         ig_type = _str(item.get("type", ""))

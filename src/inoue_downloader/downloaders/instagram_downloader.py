@@ -67,9 +67,7 @@ class InstagramDownloader(AbstractDownloader):
     # download
     # ------------------------------------------------------------------
 
-    async def download(
-        self, url: str, output_dir: Path
-    ) -> tuple[ContentMetadata, list[Path]]:
+    async def download(self, url: str, output_dir: Path) -> tuple[ContentMetadata, list[Path]]:
         if self._provider == DownloadProvider.SSSINSTAGRAM:
             return await self._sssinstagram.download(url, output_dir)
         if self._provider == DownloadProvider.SNAPINSTA:
@@ -113,7 +111,11 @@ class InstagramDownloader(AbstractDownloader):
             media_urls = self._snapinsta._extract_download_urls(decoded)
 
             source_id_match = re.search(r"/(?:p|reel|tv)/([A-Za-z0-9_-]+)", url)
-            source_id = source_id_match.group(1) if source_id_match else url
+            if source_id_match:
+                source_id = source_id_match.group(1)
+            else:
+                path_segments = [s for s in url.rstrip("/").split("/") if s]
+                source_id = path_segments[-1] if path_segments else "unknown"
 
             has_video = any(t == "video" for _, t in media_urls)
             content_type = ContentType.VIDEO if has_video else ContentType.IMAGE
@@ -167,9 +169,7 @@ class InstagramDownloader(AbstractDownloader):
                     logger.debug("Session restore failed, will login fresh")
 
         try:
-            await asyncio.to_thread(
-                client.login, creds.username, creds.password.get_secret_value()
-            )
+            await asyncio.to_thread(client.login, creds.username, creds.password.get_secret_value())
         except Exception as e:
             raise InstagramError(f"Instagram login failed: {e}") from e
 

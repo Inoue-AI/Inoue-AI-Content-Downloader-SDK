@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+import hashlib
+import re
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from .enums import ContentType, DownloadStatus, Platform
+
+_SAFE_ID_RE = re.compile(r"^[A-Za-z0-9_\-]{1,200}$")
 
 
 class ContentMetadata(BaseModel):
@@ -25,6 +29,19 @@ class ContentMetadata(BaseModel):
     source_id: str
     tags: list[str] = Field(default_factory=list)
     extra: dict[str, str | int | float | bool | None] = Field(default_factory=dict)
+
+    @field_validator("source_id")
+    @classmethod
+    def _sanitize_source_id(cls, v: str) -> str:
+        """Ensure source_id is safe for use in filenames and S3 keys.
+
+        If the value is already a clean alphanumeric ID it passes through
+        unchanged.  Anything else (URLs, special chars, path traversals)
+        is replaced with a short SHA-256 hash of the original value.
+        """
+        if _SAFE_ID_RE.match(v):
+            return v
+        return hashlib.sha256(v.encode()).hexdigest()[:16]
 
 
 class DownloadedFile(BaseModel):

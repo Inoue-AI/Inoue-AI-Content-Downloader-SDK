@@ -66,7 +66,6 @@ src = ["src", "tests"]
 select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "ASYNC", "RUF"]
 ignore = [
     "ASYNC230",  # open() in async - we use it for S3 upload_fileobj which expects a sync file object
-    "ASYNC240",  # pathlib in async - quick fs ops (mkdir, exists) are fine without trio/anyio
     "B027",      # empty methods in ABC without @abstractmethod - intentional optional overrides
 ]
 

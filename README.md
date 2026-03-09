@@ -342,7 +342,7 @@ Returned by `extract_metadata()` and included in every `DownloadResult`.
 | `upload_date` | `datetime \| None` | Original upload timestamp |
 | `thumbnail_url` | `str \| None` | Thumbnail image URL |
 | `original_url` | `str` | The URL that was passed to the SDK |
-| `source_id` | `str` | Platform-specific content ID |
+| `source_id` | `str` | Platform-specific content ID (auto-sanitized for filename/S3 key safety) |
 | `tags` | `list[str]` | Content tags/hashtags |
 | `extra` | `dict[str, str \| int \| float \| bool \| None]` | Provider-specific extra fields |
 
